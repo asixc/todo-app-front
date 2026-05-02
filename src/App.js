@@ -10,14 +10,20 @@ function App() {
   const [items, setItems] = useState([]);
   const [value, setValue] = useState("");
   const [showItems, setShowItems] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const loadItems = useCallback(async () => {
-    const res = await fetch(`${API_URL}`);
-    if (!res.ok) {
-      throw new Error("Error al cargar los items");
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}`);
+      if (!res.ok) {
+        throw new Error("Error al cargar los items");
+      }
+      const data = await res.json();
+      setItems(data);
+    } finally {
+      setLoading(false);
     }
-    const data = await res.json();
-    setItems(data);
   }, []);
 
   useEffect(() => {
@@ -51,12 +57,6 @@ function App() {
 
   function showCompletedItems() {
     setShowItems(items.filter((item) => item.done));
-  }
-
-  async function deleteAllCompletedItems() {
-    const completedItems = items.filter((item) => item.done);
-    await Promise.all(completedItems.map((item) => deleteItem(item.id)));
-    await loadItems();
   }
 
   async function saveItem() {
@@ -181,17 +181,21 @@ function App() {
             <input id="toggle-all" className="toggle-all" type="checkbox" />
             <label htmlFor="toggle-all">Mark all as complete</label>
             <ul className="todo-list">
-              {showItems.map((item) => (
-                <Item
-                  key={item.id}
-                  id={item.id}
-                  name={item.name}
-                  done={item.done}
-                  quantity={item.quantity}
-                  handleDeleteItems={handleDeleteItems}
-                  handleToggleItem={handleToggleItem}
-                />
-              ))}
+              {loading ? (
+                <li className="loading">Cargando...</li>
+              ) : (
+                showItems.map((item) => (
+                  <Item
+                    key={item.id}
+                    id={item.id}
+                    name={item.name}
+                    done={item.done}
+                    quantity={item.quantity}
+                    handleDeleteItems={handleDeleteItems}
+                    handleToggleItem={handleToggleItem}
+                  />
+                ))
+              )}
             </ul>
           </section>
 
@@ -219,12 +223,6 @@ function App() {
                 </a>
               </li>
             </ul>
-            <button
-              className="clear-completed"
-              onClick={deleteAllCompletedItems}
-            >
-              Borrar completados
-            </button>
           </footer>
         </section>
       </div>
