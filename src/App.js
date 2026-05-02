@@ -11,16 +11,20 @@ function App() {
   const [value, setValue] = useState("");
   const [showItems, setShowItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${API_URL}`);
       if (!res.ok) {
-        throw new Error("Error al cargar los items");
+        throw new Error(`Error al cargar los items (${res.status})`);
       }
       const data = await res.json();
       setItems(data);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -183,6 +187,8 @@ function App() {
             <ul className="todo-list">
               {loading ? (
                 <li className="loading">Cargando...</li>
+              ) : error ? (
+                <li className="error">{error}</li>
               ) : (
                 showItems.map((item) => (
                   <Item
