@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import Item from "./Item";
 import "@fontsource/abril-fatface";
@@ -11,11 +11,19 @@ function App() {
   const [value, setValue] = useState("");
   const [showItems, setShowItems] = useState([]);
 
+  const loadItems = useCallback(async () => {
+    const res = await fetch(`${API_URL}`);
+    if (!res.ok) {
+      throw new Error("Error al cargar los items");
+    }
+    const data = await res.json();
+    setItems(data);
+  }, []);
+
   useEffect(() => {
     loadItems();
     handleWebSocket();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadItems]);
 
   useEffect(() => {
     setShowItems(items.filter((item) => !item.done));
@@ -31,16 +39,6 @@ function App() {
       item.name.toLowerCase().startsWith(name.toLowerCase())
     );
     setShowItems(filteredItems);
-  }
-
-  async function loadItems() {
-    const res = await fetch(`${API_URL}`);
-    if (!res.ok) {
-      throw new Error("Error al cargar los items");
-    }
-    const data = await res.json();
-    setItems(data);
-    setShowItems(items.filter((item) => !item.done));
   }
 
   function showAllItems() {
