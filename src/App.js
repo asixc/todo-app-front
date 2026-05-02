@@ -3,6 +3,9 @@ import "./App.css";
 import Item from "./Item";
 import "@fontsource/abril-fatface";
 
+const API_URL = process.env.REACT_APP_API_URL;
+const WS_URL = process.env.REACT_APP_WS_URL;
+
 function App() {
   const [items, setItems] = useState([]);
   const [value, setValue] = useState("");
@@ -28,8 +31,9 @@ function App() {
     );
     setShowItems(filteredItems);
   }
+
   async function loadItems() {
-    const res = await fetch("https://api.casa.full4media.com/api/v1/todo");
+    const res = await fetch(`${API_URL}`);
     if (!res.ok) {
       throw new Error("Error al cargar los items");
     }
@@ -57,7 +61,7 @@ function App() {
   }
 
   async function saveItem() {
-    const res = await fetch("https://api.casa.full4media.com/api/v1/todo", {
+    const res = await fetch(`${API_URL}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -74,12 +78,9 @@ function App() {
   }
 
   async function deleteItem(id) {
-    const res = await fetch(
-      `https://api.casa.full4media.com/api/v1/todo/${id}`,
-      {
-        method: "DELETE",
-      }
-    );
+    const res = await fetch(`${API_URL}/${id}`, {
+      method: "DELETE",
+    });
 
     if (!res.ok) {
       throw new Error("Error al eliminar el item");
@@ -87,12 +88,9 @@ function App() {
   }
 
   async function markUndone(id) {
-    const res = await fetch(
-      `https://api.casa.full4media.com/api/v1/todo/${id}/mark-undone`,
-      {
-        method: "POST",
-      }
-    );
+    const res = await fetch(`${API_URL}/${id}/mark-undone`, {
+      method: "POST",
+    });
 
     if (!res.ok) {
       throw new Error("Error al marcar sin hacer el item");
@@ -100,12 +98,9 @@ function App() {
   }
 
   async function markDone(id) {
-    const res = await fetch(
-      `https://api.casa.full4media.com/api/v1/todo/${id}/mark-done`,
-      {
-        method: "POST",
-      }
-    );
+    const res = await fetch(`${API_URL}/${id}/mark-done`, {
+      method: "POST",
+    });
 
     if (!res.ok) {
       throw new Error("Error al marcar el item");
@@ -138,40 +133,25 @@ function App() {
   }
 
   async function handleWebSocket() {
-    // Crear una conexión WebSocket
-    const socket = new WebSocket("ws://api.casa.full4media.com/ws/todos");
+    const socket = new WebSocket(`${WS_URL}`);
 
-    // Evento que se dispara cuando la conexión se abre
     socket.onopen = function (event) {
       console.log("Conexión WebSocket establecida.");
-      // Puedes enviar un mensaje al servidor si es necesario
-      socket.send(
-        JSON.stringify({
-          action: "create",
-          todo: {
-            name: "Comprar leche",
-            done: false,
-          },
-        })
-      );
     };
 
-    // Evento que se dispara cuando llega un mensaje del servidor
     socket.onmessage = function (event) {
       console.log("Mensaje recibido del servidor:", event.data);
-      // Aquí puedes procesar los datos recibidos del WebSocket
     };
 
-    // Evento que se dispara cuando la conexión se cierra
     socket.onclose = function (event) {
       console.log("Conexión WebSocket cerrada.");
     };
 
-    // Evento que se dispara cuando ocurre un error en la conexión
     socket.onerror = function (error) {
       console.error("Error en la conexión WebSocket:", error);
     };
   }
+
   return (
     <div className="App">
       <div>
