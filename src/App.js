@@ -14,6 +14,7 @@ function App() {
   useEffect(() => {
     loadItems();
     handleWebSocket();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
