@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import Item from "./Item";
 import "@fontsource/abril-fatface";
@@ -12,24 +12,46 @@ import {
 } from "./auth";
 
 const API_URL = process.env.REACT_APP_API_URL;
-const WS_URL = process.env.REACT_APP_WS_URL;
 
 function App() {
   const [items, setItems] = useState([]);
-  const [value, setValue] = useState("");
-  const [showItems, setShowItems] = useState([]);
+  const [inputValue, setInputValue] = useState("");
+  const [filter, setFilter] = useState("pending"); // 'all' | 'pending' | 'completed'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [pendingIds, setPendingIds] = useState(new Set());
+  const [addingItem, setAddingItem] = useState(false);
 
+  // Items derivados sin estado extra ni useEffect
+  const displayedItems = useMemo(() => {
+    if (inputValue.trim()) {
+      return items.filter((item) =>
+        item.name.toLowerCase().startsWith(inputValue.toLowerCase())
+      );
+    }
+    if (filter === "pending") return items.filter((i) => !i.done);
+    if (filter === "completed") return items.filter((i) => i.done);
+    return items;
+  }, [items, filter, inputValue]);
+
+  const addPendingId = (id) =>
+    setPendingIds((prev) => new Set([...prev, id]));
+
+  const removePendingId = (id) =>
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+  // Carga inicial con spinner
   const loadItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await apiFetch(`${API_URL}`);
-      if (!res.ok) {
-        throw new Error(`Error al cargar los items (${res.status})`);
-      }
+      if (!res.ok) throw new Error(`Error al cargar los items (${res.status})`);
       const data = await res.json();
       setItems(data);
     } catch (err) {
@@ -43,6 +65,18 @@ function App() {
     }
   }, []);
 
+  // Sincronización silenciosa en background (sin spinner, sin flash)
+  const syncItems = useCallback(async () => {
+    try {
+      const res = await apiFetch(`${API_URL}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setItems(data);
+    } catch (err) {
+      if (err.message === AUTH_REQUIRED) setShowLogin(true);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const existingToken = getToken();
@@ -51,141 +85,125 @@ function App() {
           await loadItems();
         } catch {
           const refreshed = await tryRefresh();
-          if (refreshed) {
-            await loadItems();
-          } else {
-            setShowLogin(true);
-          }
+          if (refreshed) await loadItems();
+          else setShowLogin(true);
         }
       } else {
         const refreshed = await tryRefresh();
-        if (refreshed) {
-          await loadItems();
-        } else {
-          setShowLogin(true);
-        }
+        if (refreshed) await loadItems();
+        else setShowLogin(true);
       }
     };
     init();
   }, [loadItems]);
 
-  useEffect(() => {
-    setShowItems(items.filter((item) => !item.done));
-  }, [items]);
-
   function handleName(e) {
-    const name = e?.target?.value;
-    setValue(name);
-    if (name.trim().length === 0) {
-      return setShowItems(items.filter((item) => !item.done));
-    }
-    const filteredItems = items.filter((item) =>
-      item.name.toLowerCase().startsWith(name.toLowerCase())
-    );
-    setShowItems(filteredItems);
-  }
-
-  function showAllItems() {
-    setShowItems(items);
-  }
-
-  function showPendingItems() {
-    setShowItems(items.filter((item) => !item.done));
-  }
-
-  function showCompletedItems() {
-    setShowItems(items.filter((item) => item.done));
-  }
-
-  async function saveItem() {
-    const res = await apiFetch(`${API_URL}`, {
-      method: "POST",
-      body: JSON.stringify({ name: value }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Error al guardar el item");
-    }
-    setValue("");
-  }
-
-  async function deleteItem(id) {
-    const res = await apiFetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
-
-    if (!res.ok) {
-      throw new Error("Error al eliminar el item");
-    }
-  }
-
-  async function markUndone(id) {
-    const res = await apiFetch(`${API_URL}/${id}/mark-undone`, {
-      method: "POST",
-    });
-
-    if (!res.ok) {
-      throw new Error("Error al marcar sin hacer el item");
-    }
-  }
-
-  async function markDone(id) {
-    const res = await apiFetch(`${API_URL}/${id}/mark-done`, {
-      method: "POST",
-    });
-
-    if (!res.ok) {
-      throw new Error("Error al marcar el item");
-    }
+    setInputValue(e?.target?.value ?? "");
   }
 
   async function handleAddItems(event) {
     if (event.keyCode !== 13) return;
-    if (event.target.value.trim().length === 0) return;
+    const name = event.target.value.trim();
+    if (!name) return;
+
+    // Optimistic: añadir item temporal inmediatamente
+    const tempId = `temp_${Date.now()}`;
+    setItems((prev) => [
+      ...prev,
+      { id: tempId, name, done: false, quantity: null, _temp: true },
+    ]);
+    setInputValue("");
+    setAddingItem(true);
 
     try {
-      await saveItem();
-      await loadItems();
+      const res = await apiFetch(`${API_URL}`, {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error("Error al guardar el item");
+
+      // Intentar usar el item real devuelto por el servidor
+      let realItem = null;
+      try {
+        realItem = await res.json();
+      } catch {}
+
+      if (realItem?.id) {
+        // Reemplazar temp con el item real (sin refetch, sin flash)
+        setItems((prev) =>
+          prev.map((i) => (i.id === tempId ? { ...realItem } : i))
+        );
+      } else {
+        // Fallback silencioso: sync en background
+        setItems((prev) => prev.filter((i) => i.id !== tempId));
+        await syncItems();
+      }
     } catch (err) {
+      // Revertir: quitar el item temporal
+      setItems((prev) => prev.filter((i) => i.id !== tempId));
       if (err.message === AUTH_REQUIRED) {
         setShowLogin(true);
+      } else {
+        setError("Error al guardar el item");
       }
+      setInputValue(name); // Restaurar lo que escribía
+    } finally {
+      setAddingItem(false);
     }
   }
 
   async function handleDeleteItems(id) {
+    // Optimistic: eliminar inmediatamente
+    const backup = items.find((i) => i.id === id);
+    const backupIndex = items.findIndex((i) => i.id === id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
+
     try {
-      await deleteItem(id);
-      await loadItems();
+      const res = await apiFetch(`${API_URL}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Error al eliminar el item");
     } catch (err) {
-      if (err.message === AUTH_REQUIRED) {
-        setShowLogin(true);
-      }
+      // Revertir: reinsertar en la posición original
+      setItems((prev) => {
+        const next = [...prev];
+        next.splice(backupIndex, 0, backup);
+        return next;
+      });
+      if (err.message === AUTH_REQUIRED) setShowLogin(true);
+      else setError("Error al eliminar el item");
     }
   }
 
   async function handleToggleItem(id) {
-    const itemFound = items.find((i) => i.id === id);
+    const item = items.find((i) => i.id === id);
+    if (!item || pendingIds.has(id)) return; // prevenir doble tap
+
+    // Optimistic: cambiar estado inmediatamente
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i))
+    );
+    addPendingId(id);
 
     try {
-      if (itemFound.done) {
-        await markUndone(id);
-      } else {
-        await markDone(id);
-      }
-      await loadItems();
-      setValue("");
+      const endpoint = item.done ? "mark-undone" : "mark-done";
+      const res = await apiFetch(`${API_URL}/${id}/${endpoint}`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Error al actualizar el item");
     } catch (err) {
-      if (err.message === AUTH_REQUIRED) {
-        setShowLogin(true);
-      }
+      // Revertir al estado original
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, done: item.done } : i))
+      );
+      if (err.message === AUTH_REQUIRED) setShowLogin(true);
+      else setError("Error al actualizar el item");
+    } finally {
+      removePendingId(id);
     }
   }
 
   const handleLogout = async () => {
     await logout();
     setItems([]);
-    setShowItems([]);
     setShowLogin(true);
   };
 
@@ -194,26 +212,7 @@ function App() {
     await loadItems();
   };
 
-  // eslint-disable-next-line no-unused-vars
-  async function handleWebSocket() {
-    const socket = new WebSocket(`${WS_URL}`);
-
-    socket.onopen = function (event) {
-      console.log("Conexión WebSocket establecida.");
-    };
-
-    socket.onmessage = function (event) {
-      console.log("Mensaje recibido del servidor:", event.data);
-    };
-
-    socket.onclose = function (event) {
-      console.log("Conexión WebSocket cerrada.");
-    };
-
-    socket.onerror = function (error) {
-      console.error("Error en la conexión WebSocket:", error);
-    };
-  }
+  const pendingCount = items.filter((i) => !i.done && !i._temp).length;
 
   return (
     <div className="App">
@@ -226,20 +225,20 @@ function App() {
               <small
                 style={{ fontSize: "0.5em", marginLeft: "10px", color: "#888" }}
               >
-                v0.1.6
+                v0.1.7
               </small>
             </h1>
 
             <input
               id="new-todo-input"
-              className="new-todo"
+              className={`new-todo${addingItem ? " adding" : ""}`}
               placeholder="¿Qué falta?"
               autoFocus=""
               autoComplete="off"
               onKeyUp={handleAddItems}
               onChange={handleName}
-              value={value}
-              disabled={showLogin}
+              value={inputValue}
+              disabled={showLogin || addingItem}
             />
           </header>
 
@@ -250,15 +249,18 @@ function App() {
               {loading ? (
                 <li className="loading">Cargando...</li>
               ) : error ? (
-                <li className="error">{error}</li>
+                <li className="error" onClick={() => setError(null)}>
+                  {error} &nbsp;✕
+                </li>
               ) : (
-                showItems.map((item) => (
+                displayedItems.map((item) => (
                   <Item
                     key={item.id}
                     id={item.id}
                     name={item.name}
                     done={item.done}
                     quantity={item.quantity}
+                    pending={pendingIds.has(item.id) || !!item._temp}
                     handleDeleteItems={handleDeleteItems}
                     handleToggleItem={handleToggleItem}
                   />
@@ -269,24 +271,22 @@ function App() {
 
           <footer className="footer">
             <span className="todo-count">
-              <strong id="pending-count">
-                {items.filter((i) => !i.done).length}
-              </strong>
+              <strong id="pending-count">{pendingCount}</strong>
               &nbsp;pendiente(s)
             </span>
             <ul className="filters">
-              <li onClick={showAllItems}>
-                <a className="filtro" href="#/">
+              <li onClick={() => setFilter("all")}>
+                <a className={`filtro${filter === "all" ? " selected" : ""}`} href="#/">
                   Todos
                 </a>
               </li>
-              <li onClick={showPendingItems}>
-                <a className="filtro" href="#/active">
+              <li onClick={() => setFilter("pending")}>
+                <a className={`filtro${filter === "pending" ? " selected" : ""}`} href="#/active">
                   Pendientes
                 </a>
               </li>
-              <li onClick={showCompletedItems}>
-                <a className="filtro" href="#/completed">
+              <li onClick={() => setFilter("completed")}>
+                <a className={`filtro${filter === "completed" ? " selected" : ""}`} href="#/completed">
                   Completados
                 </a>
               </li>

@@ -543,3 +543,38 @@ hr {
 .logout:hover {
   color: #c0392b;
 }
+
+/* Estado pending: item en vuelo (toggle/delete optimista) */
+.todo-list li.item-pending {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.todo-list li.item-pending .toggle {
+  cursor: not-allowed;
+}
+
+/* Item temporal recién añadido (aún no confirmado por el servidor) */
+.todo-list li.item-pending label {
+  font-style: italic;
+}
+
+/* Input bloqueado mientras se guarda un nuevo item */
+.new-todo.adding {
+  opacity: 0.6;
+  background-image: none;
+}
+
+/* Error inline: clic para cerrar */
+.todo-list li.error {
+  cursor: pointer;
+  color: #c0392b;
+  font-size: 14px;
+  padding: 10px 15px;
+  text-align: center;
+}
+
+.todo-list li.error:hover {
+  text-decoration: underline;
+}
