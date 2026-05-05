@@ -2,6 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import Item from "./Item";
 import "@fontsource/abril-fatface";
+import Login from "./Login";
+import {
+  getToken,
+  tryRefresh,
+  logout,
+  apiFetch,
+  AUTH_REQUIRED,
+} from "./auth";
 
 const API_URL = process.env.REACT_APP_API_URL;
 const WS_URL = process.env.REACT_APP_WS_URL;
@@ -12,18 +20,23 @@ function App() {
   const [showItems, setShowItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}`);
+      const res = await apiFetch(`${API_URL}`);
       if (!res.ok) {
         throw new Error(`Error al cargar los items (${res.status})`);
       }
       const data = await res.json();
       setItems(data);
     } catch (err) {
+      if (err.message === AUTH_REQUIRED) {
+        setShowLogin(true);
+        return;
+      }
       setError(err.message);
     } finally {
       setLoading(false);
@@ -31,8 +44,29 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadItems();
-    handleWebSocket();
+    const init = async () => {
+      const existingToken = getToken();
+      if (existingToken) {
+        try {
+          await loadItems();
+        } catch {
+          const refreshed = await tryRefresh();
+          if (refreshed) {
+            await loadItems();
+          } else {
+            setShowLogin(true);
+          }
+        }
+      } else {
+        const refreshed = await tryRefresh();
+        if (refreshed) {
+          await loadItems();
+        } else {
+          setShowLogin(true);
+        }
+      }
+    };
+    init();
   }, [loadItems]);
 
   useEffect(() => {
@@ -64,14 +98,9 @@ function App() {
   }
 
   async function saveItem() {
-    const res = await fetch(`${API_URL}`, {
+    const res = await apiFetch(`${API_URL}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: value,
-      }),
+      body: JSON.stringify({ name: value }),
     });
 
     if (!res.ok) {
@@ -81,7 +110,7 @@ function App() {
   }
 
   async function deleteItem(id) {
-    const res = await fetch(`${API_URL}/${id}`, {
+    const res = await apiFetch(`${API_URL}/${id}`, {
       method: "DELETE",
     });
 
@@ -91,7 +120,7 @@ function App() {
   }
 
   async function markUndone(id) {
-    const res = await fetch(`${API_URL}/${id}/mark-undone`, {
+    const res = await apiFetch(`${API_URL}/${id}/mark-undone`, {
       method: "POST",
     });
 
@@ -101,7 +130,7 @@ function App() {
   }
 
   async function markDone(id) {
-    const res = await fetch(`${API_URL}/${id}/mark-done`, {
+    const res = await apiFetch(`${API_URL}/${id}/mark-done`, {
       method: "POST",
     });
 
@@ -114,27 +143,58 @@ function App() {
     if (event.keyCode !== 13) return;
     if (event.target.value.trim().length === 0) return;
 
-    await saveItem();
-    await loadItems();
+    try {
+      await saveItem();
+      await loadItems();
+    } catch (err) {
+      if (err.message === AUTH_REQUIRED) {
+        setShowLogin(true);
+      }
+    }
   }
 
   async function handleDeleteItems(id) {
-    await deleteItem(id);
-    await loadItems();
+    try {
+      await deleteItem(id);
+      await loadItems();
+    } catch (err) {
+      if (err.message === AUTH_REQUIRED) {
+        setShowLogin(true);
+      }
+    }
   }
 
   async function handleToggleItem(id) {
     const itemFound = items.find((i) => i.id === id);
 
-    if (itemFound.done) {
-      await markUndone(id);
-    } else {
-      await markDone(id);
+    try {
+      if (itemFound.done) {
+        await markUndone(id);
+      } else {
+        await markDone(id);
+      }
+      await loadItems();
+      setValue("");
+    } catch (err) {
+      if (err.message === AUTH_REQUIRED) {
+        setShowLogin(true);
+      }
     }
-    await loadItems();
-    setValue("");
   }
 
+  const handleLogout = async () => {
+    await logout();
+    setItems([]);
+    setShowItems([]);
+    setShowLogin(true);
+  };
+
+  const handleLoginSuccess = async () => {
+    setShowLogin(false);
+    await loadItems();
+  };
+
+  // eslint-disable-next-line no-unused-vars
   async function handleWebSocket() {
     const socket = new WebSocket(`${WS_URL}`);
 
@@ -157,6 +217,7 @@ function App() {
 
   return (
     <div className="App">
+      {showLogin && <Login onSuccess={handleLoginSuccess} />}
       <div>
         <section className="todoapp">
           <header className="header">
@@ -178,6 +239,7 @@ function App() {
               onKeyUp={handleAddItems}
               onChange={handleName}
               value={value}
+              disabled={showLogin}
             />
           </header>
 
@@ -229,6 +291,11 @@ function App() {
                 </a>
               </li>
             </ul>
+            {!showLogin && (
+              <button className="logout" onClick={handleLogout}>
+                Salir
+              </button>
+            )}
           </footer>
         </section>
       </div>

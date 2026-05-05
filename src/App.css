@@ -527,3 +527,19 @@ hr {
     left: 8px;
   }
 }
+
+.logout {
+  position: absolute;
+  right: 15px;
+  bottom: 15px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.logout:hover {
+  color: #c0392b;
+}
