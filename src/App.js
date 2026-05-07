@@ -26,14 +26,18 @@ function App() {
   // Items derivados sin estado extra ni useEffect
   const displayedItems = useMemo(() => {
     if (inputValue.trim()) {
-      return items.filter((item) =>
-        item.name.toLowerCase().startsWith(inputValue.toLowerCase())
+      return items.filter(
+        (item) =>
+          item.name.toLowerCase().startsWith(inputValue.toLowerCase()) ||
+          pendingIds.has(item.id)
       );
     }
-    if (filter === "pending") return items.filter((i) => !i.done);
-    if (filter === "completed") return items.filter((i) => i.done);
+    if (filter === "pending")
+      return items.filter((i) => !i.done || pendingIds.has(i.id));
+    if (filter === "completed")
+      return items.filter((i) => i.done || pendingIds.has(i.id));
     return items;
-  }, [items, filter, inputValue]);
+  }, [items, filter, inputValue, pendingIds]);
 
   const addPendingId = (id) =>
     setPendingIds((prev) => new Set([...prev, id]));
@@ -177,10 +181,6 @@ function App() {
     const item = items.find((i) => i.id === id);
     if (!item || pendingIds.has(id)) return; // prevenir doble tap
 
-    // Optimistic: cambiar estado inmediatamente
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i))
-    );
     addPendingId(id);
 
     try {
@@ -189,15 +189,15 @@ function App() {
         method: "POST",
       });
       if (!res.ok) throw new Error("Error al actualizar el item");
-    } catch (err) {
-      // Revertir al estado original
+      // Solo actualizar estado tras éxito
       setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, done: item.done } : i))
+        prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i))
       );
+    } catch (err) {
       if (err.message === AUTH_REQUIRED) setShowLogin(true);
       else setError("Error al actualizar el item");
     } finally {
-      removePendingId(id);
+      setTimeout(() => removePendingId(id), 300);
     }
   }
 
