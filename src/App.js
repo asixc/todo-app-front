@@ -225,7 +225,7 @@ function App() {
               <small
                 style={{ fontSize: "0.5em", marginLeft: "10px", color: "#888" }}
               >
-                v0.1.7
+                v0.1.8
               </small>
             </h1>
 
@@ -235,6 +235,7 @@ function App() {
               placeholder="¿Qué falta?"
               autoFocus=""
               autoComplete="off"
+              maxLength={120}
               onKeyUp={handleAddItems}
               onChange={handleName}
               value={inputValue}

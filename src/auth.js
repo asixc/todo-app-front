@@ -76,11 +76,10 @@ export const AUTH_REQUIRED = "AUTH_REQUIRED";
 
 export async function apiFetch(url, options = {}) {
   const token = getToken();
-  console.log(`[apiFetch] ${options.method || 'GET'} ${url}`, { token: token ? token.substring(0, 50) + '...' : 'NO TOKEN' });
-  
+
   const headers = {
     ...options.headers,
-    Origin: "http://localhost:3000",
+    Origin: window.location.origin,
   };
 
   if (token) {
@@ -90,9 +89,6 @@ export async function apiFetch(url, options = {}) {
   if (options.body && typeof options.body === "string") {
     headers["Content-Type"] = "application/json";
   }
-
-  console.log(`[apiFetch] headers:`, headers);
-  console.log(`[apiFetch] body:`, options.body);
 
   const res = await fetch(url, {
     ...options,

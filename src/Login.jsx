@@ -37,8 +37,7 @@ export default function Login({ onSuccess }) {
     setLoading(true);
 
     try {
-      await requestOtp(email);
-      setStep("otp");
+      await requestOtp(email.trim());
       setTimeLeft(OTP_DURATION);
     } catch (err) {
       setError(err.message);
@@ -53,7 +52,7 @@ export default function Login({ onSuccess }) {
     setLoading(true);
 
     try {
-      const token = await verifyOtp(email, otp);
+      const token = await verifyOtp(email.trim(), otp.trim());
       onSuccess(token);
     } catch (err) {
       setError(err.message);
@@ -113,17 +112,19 @@ export default function Login({ onSuccess }) {
 
             <div className="form-group">
               <label htmlFor="otp">Código OTP</label>
-              <input
-                id="otp"
-                type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="123456"
-                maxLength={6}
-                required
-                autoFocus
-                disabled={isExpired}
-              />
+                <input
+                  id="otp"
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="123456"
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  required
+                  autoFocus
+                  disabled={isExpired}
+                />
             </div>
 
             <div className="timer">

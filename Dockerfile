@@ -1,5 +1,6 @@
-# Etapa de producción
-FROM nginx:alpine
+# Etapa de producción — imagen sin root (puerto 8080)
+FROM nginxinc/nginx-unprivileged:alpine
 COPY build/ /usr/share/nginx/html
-EXPOSE 80
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
