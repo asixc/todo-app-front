@@ -38,6 +38,7 @@ export default function Login({ onSuccess }) {
 
     try {
       await requestOtp(email.trim());
+      setStep("otp");
       setTimeLeft(OTP_DURATION);
     } catch (err) {
       setError(err.message);
