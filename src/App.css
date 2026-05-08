@@ -375,13 +375,136 @@ html .clear-completed:active {
   }
 }
 
-@media (max-width: 430px) {
+/* ============================================================
+   MOBILE — pantallas pequeñas (≤ 550px)
+   ============================================================ */
+@media (max-width: 550px) {
+  /* Eliminar espacio muerto superior y sombra de tarjeta */
+  body {
+    background: #fff;
+    max-width: 100%;
+  }
+
+  .todoapp {
+    margin: 0;
+    box-shadow: none;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Título más compacto */
+  .todoapp h1 {
+    font-size: clamp(28px, 9vw, 48px);
+    padding: 20px 15px 8px;
+    top: auto;
+  }
+
+  /* Input de nuevo ítem: reducir padding izquierdo excesivo */
+  .new-todo {
+    padding: 16px 16px 16px 20px;
+    font-size: 18px;
+  }
+
+  /* Ítem de lista: fuente y targets táctiles más grandes */
+  .todo-list li {
+    font-size: 18px;
+  }
+
+  .todo-list li label {
+    padding: 18px 56px 18px 56px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Toggle: área táctil más grande */
+  .todo-list li .toggle {
+    width: 56px;
+    height: 56px;
+  }
+
+  /* Botón eliminar: SIEMPRE visible en móvil (no hay hover) */
+  .todo-list li .destroy {
+    display: block;
+    opacity: 0.22;
+    right: 8px;
+    font-size: 22px;
+    width: 44px;
+    height: 44px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .todo-list li .destroy:after {
+    font-size: 18px;
+  }
+
+  .todo-list li .destroy:active {
+    opacity: 1;
+    color: #af5b5e;
+  }
+
+  /* Item completado: ocultar destroy más sutilmente */
+  .todo-list li.completed .destroy {
+    opacity: 0.15;
+  }
+
+  /* Footer: flex column para evitar solapamientos */
   .footer {
-    height: 50px;
+    height: auto;
+    padding: 12px 15px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+  }
+
+  .footer:before {
+    display: none;
+  }
+
+  .todo-count {
+    float: none;
+    font-size: 14px;
   }
 
   .filters {
-    bottom: 10px;
+    position: static;
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .filters li a {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+
+  .logout {
+    position: static;
+    padding: 8px 20px;
+    font-size: 13px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    color: #888;
+  }
+
+  .logout:hover {
+    border-color: #c0392b;
+  }
+
+  /* Estado de carga en lista */
+  .todo-list li.loading {
+    font-size: 14px;
+    padding: 20px;
+    text-align: center;
+    color: #aaa;
   }
 }
 

@@ -23,6 +23,7 @@ export default function Item({
           className="destroy"
           disabled={pending}
           onClick={() => handleDeleteItems(id)}
+          onTouchEnd={(e) => { e.preventDefault(); handleDeleteItems(id); }}
         ></button>
       </div>
     </li>

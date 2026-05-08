@@ -121,3 +121,62 @@
   text-align: center;
   margin-top: 15px;
 }
+
+/* ============================================================
+   MOBILE — modal como bottom sheet
+   ============================================================ */
+@media (max-width: 550px) {
+  .modal-overlay {
+    align-items: flex-end;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    padding: 28px 24px 36px;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+    /* Evitar que el teclado lo tape: desplazar con el scroll */
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+
+  /* Manija visual del bottom sheet */
+  .modal::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .modal h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  /* Inputs más grandes para evitar zoom en iOS (min 16px) */
+  .form-group input {
+    font-size: 16px;
+    padding: 14px 16px;
+    border-radius: 8px;
+  }
+
+  /* Botones más altos para táctil */
+  .modal button {
+    padding: 15px;
+    font-size: 16px;
+    border-radius: 8px;
+    min-height: 50px;
+  }
+
+  .hint {
+    font-size: 13px;
+  }
+
+  .timer {
+    font-size: 13px;
+  }
+}
