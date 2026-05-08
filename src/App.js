@@ -225,7 +225,7 @@ function App() {
               <small
                 style={{ fontSize: "0.5em", marginLeft: "10px", color: "#888" }}
               >
-                v0.1.11
+                v0.1.12
               </small>
             </h1>
 
