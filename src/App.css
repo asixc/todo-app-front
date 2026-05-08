@@ -400,30 +400,6 @@ html .clear-completed:active {
     top: auto;
   }
 
-  /* Input de nuevo ítem: reducir padding izquierdo excesivo */
-  .new-todo {
-    padding: 16px 16px 16px 20px;
-    font-size: 18px;
-  }
-
-  /* Ítem de lista: fuente y targets táctiles más grandes */
-  .todo-list li {
-    font-size: 18px;
-  }
-
-  .todo-list li label {
-    padding: 18px 56px 18px 56px;
-    min-height: 56px;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Toggle: área táctil más grande */
-  .todo-list li .toggle {
-    width: 56px;
-    height: 56px;
-  }
-
   /* Botón eliminar: SIEMPRE visible en móvil (no hay hover) */
   .todo-list li .destroy {
     display: block;
@@ -449,62 +425,41 @@ html .clear-completed:active {
     color: #af5b5e;
   }
 
-  /* Item completado: ocultar destroy más sutilmente */
+  /* Item completado: destroy más sutil */
   .todo-list li.completed .destroy {
     opacity: 0.15;
   }
 
-  /* Footer: flex column para evitar solapamientos */
+  /* Footer: dos filas para mantener el efecto bloc de notas */
   .footer {
     height: auto;
-    padding: 12px 15px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    padding: 10px 15px 30px;
     position: relative;
   }
 
-  .footer:before {
-    display: none;
-  }
+  /* El efecto decorativo de bloc de notas se mantiene */
 
   .todo-count {
-    float: none;
-    font-size: 14px;
+    float: left;
   }
 
-  .filters {
-    position: static;
-    display: flex;
-    justify-content: center;
-    gap: 2px;
-  }
-
-  .filters li a {
-    padding: 5px 10px;
-    font-size: 13px;
-  }
-
+  /* Logout: de absolute a float derecho en la primera fila */
   .logout {
     position: static;
-    padding: 8px 20px;
+    float: right;
+    bottom: auto;
+    right: auto;
+    padding: 2px 8px;
     font-size: 13px;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    color: #888;
   }
 
-  .logout:hover {
-    border-color: #c0392b;
-  }
-
-  /* Estado de carga en lista */
-  .todo-list li.loading {
-    font-size: 14px;
-    padding: 20px;
+  /* Filtros: debajo del contador y logout, centrados */
+  .filters {
+    position: static;
+    display: block;
     text-align: center;
-    color: #aaa;
+    clear: both;
+    padding-top: 8px;
   }
 }
 
