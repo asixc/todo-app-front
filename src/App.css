@@ -400,11 +400,6 @@ html .clear-completed:active {
     top: auto;
   }
 
-  /* Input de nuevo ítem: reducir padding izquierdo excesivo */
-  .new-todo {
-    padding: 16px 16px 16px 20px;
-    font-size: 18px;
-  }
 
   /* Ítem de lista: fuente y targets táctiles más grandes */
   .todo-list li {
@@ -412,7 +407,6 @@ html .clear-completed:active {
   }
 
   .todo-list li label {
-    padding: 18px 56px 18px 56px;
     min-height: 56px;
     display: flex;
     align-items: center;
