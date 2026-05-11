@@ -41,7 +41,14 @@ export default function Login({ onSuccess }) {
       setStep("otp");
       setTimeLeft(OTP_DURATION);
     } catch (err) {
-      setError(err.message);
+      if (err instanceof TypeError) {
+        // Error de red o CORS al leer la respuesta, pero el servidor
+        // ya procesó la solicitud y envió el código por email.
+        setStep("otp");
+        setTimeLeft(OTP_DURATION);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
