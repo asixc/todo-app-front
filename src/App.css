@@ -71,7 +71,7 @@ body {
   width: 100%;
   font-family: "Arial";
   /* font-size: 55px; */
-  font-size: 1.7vw;
+  font-size: clamp(32px, 5vw, 55px);
   font-weight: 200;
   text-align: center;
   color: #3fb89c;
@@ -81,9 +81,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.todoapp .version {
+  display: block;
+  text-align: center;
+  font-size: 14px;
+  color: #888;
+  margin-top: 4px;
+}
+
 @media (max-width: 768px) {
   .todoapp h1 {
-    font-size: 10vw;
+    font-size: clamp(28px, 7vw, 48px);
   }
 }
 
@@ -379,6 +387,12 @@ html .clear-completed:active {
    MOBILE — pantallas pequeñas (≤ 550px)
    ============================================================ */
 @media (max-width: 550px) {
+  /* Evitar scroll horizontal por overflow de cualquier elemento */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   /* Eliminar espacio muerto superior y sombra de tarjeta */
   body {
     background: #fff;
@@ -395,9 +409,15 @@ html .clear-completed:active {
 
   /* Título más compacto */
   .todoapp h1 {
-    font-size: clamp(28px, 9vw, 48px);
+    font-size: clamp(24px, 7vw, 40px);
     padding: 20px 15px 8px;
     top: auto;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .todoapp .version {
+    font-size: 12px;
   }
 
 
@@ -682,10 +702,6 @@ hr {
 @keyframes pulse-pending {
   0%, 100% { opacity: 0; }
   50% { opacity: 1; }
-}
-
-.todo-list li.item-pending .toggle {
-  cursor: not-allowed;
 }
 
 /* Item temporal recién añadido (aún no confirmado por el servidor) */
