@@ -3,6 +3,7 @@ import "./App.css";
 import Item from "./Item";
 import "@fontsource/abril-fatface";
 import Login from "./Login";
+import { APP_VERSION } from "./version";
 import {
   getToken,
   tryRefresh,
@@ -221,7 +222,7 @@ function App() {
         <section className="todoapp">
           <header className="header">
             <h1>Lista de la compra</h1>
-            <small className="version">v0.1.14</small>
+            <small className="version">{APP_VERSION}</small>
 
             <input
               id="new-todo-input"
