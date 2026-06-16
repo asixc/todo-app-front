@@ -7,8 +7,8 @@ export default function ConfirmModal({ itemName, onConfirm, onCancel }) {
         <h2>¿Eliminar nota?</h2>
         <p className="hint">«{itemName}» se eliminará permanentemente.</p>
         <div className="confirm-actions">
-          <button className="back" onClick={onCancel}>Cancelar</button>
           <button className="confirm-delete" onClick={onConfirm}>Eliminar</button>
+          <button className="back" onClick={onCancel}>Cancelar</button>
         </div>
       </div>
     </div>
