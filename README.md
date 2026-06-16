@@ -38,3 +38,26 @@ pnpm config set ignore-scripts true
 ```
 
 Es un setting global de pnpm, no requiere cambios al proyecto. Sin esto, `pnpm dev`, `pnpm build` y `pnpm test` abortan con exit 1.
+
+## Release
+
+El versionado se hace bumping `package.json` (`"version": "x.y.z"`) y haciendo push a `main`. El workflow de GitHub Actions (`.github/workflows/build-and-push.yml`) hace lo siguiente:
+
+1. Lee la versión de `package.json`.
+2. Construye la imagen Docker (linux/amd64) con `pnpm build` (usa `.env` → URLs de producción).
+3. La publica en el Zot registry con tres tags:
+   - `registry.full4media.com/apps/todo-app:<version>`
+   - `registry.full4media.com/apps/todo-app:sha-<short-sha>`
+   - `registry.full4media.com/apps/todo-app:latest`
+4. Hace commit automático en `asixc/gitops-config` actualizando `apps/base/todo-app/deployment.yaml` con el nuevo tag.
+5. FluxCD reconcilia y aplica el cambio en el cluster.
+
+El subtítulo `v<version>` en el header se inyecta en build time desde `package.json` (ver `vite.config.js` y `src/version.js`), por lo que siempre está sincronizado.
+
+### Secrets requeridos en GitHub (repo `asixc/todo-app-front`)
+
+- `REGISTRY_USERNAME`: usuario robot del Zot (ej. `github-actions`).
+- `REGISTRY_PASSWORD`: password del robot.
+- `GITOPS_TOKEN`: Personal Access Token con scope `repo` sobre `asixc/gitops-config`, para que el workflow pueda hacer commit ahí.
+
+> **Importante:** las URLs de la API en `.env` apuntan a producción (`api.todo.full4media.com`). Para desarrollo local, `pnpm dev` usa automáticamente `.env.development` con `localhost:8080`. No hace falta cambiar nada para cambiar de entorno.
