@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: true
+onlyBuiltDependencies:
+  - core-js
+  - core-js-pure
+  - esbuild
+  - "@testing-library"
