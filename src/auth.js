@@ -1,4 +1,4 @@
-const AUTH_URL = process.env.REACT_APP_AUTH_URL;
+const AUTH_URL = import.meta.env.VITE_AUTH_URL;
 const TOKEN_KEY = "todo_access_token";
 
 export function getToken() {
