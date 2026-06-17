@@ -109,6 +109,36 @@ describe("apiFetch with automatic refresh", () => {
     expect(res).toBe(successResponse);
   });
 
+  it("deduplica llamadas concurrentes a tryRefresh (evita rate limit)", async () => {
+    let callCount = 0;
+    global.fetch.mockImplementation(async () => {
+      callCount++;
+      // Simular latencia del refresh
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return {
+        status: 200,
+        ok: true,
+        json: async () => ({ accessToken: `new-token-${callCount}` }),
+      };
+    });
+
+    // 5 llamadas concurrentes
+    const promises = [
+      import("./auth").then((m) => m.tryRefresh()),
+      import("./auth").then((m) => m.tryRefresh()),
+      import("./auth").then((m) => m.tryRefresh()),
+      import("./auth").then((m) => m.tryRefresh()),
+      import("./auth").then((m) => m.tryRefresh()),
+    ];
+
+    const tokens = await Promise.all(promises);
+
+    // Solo debe haber 1 llamada a /refresh
+    expect(callCount).toBe(1);
+    // Todos los tokens deben ser el mismo (la misma promesa resuelta)
+    expect(new Set(tokens).size).toBe(1);
+  });
+
   it("no intenta refresh si no hay token guardado", async () => {
     global.fetch.mockResolvedValue({ status: 401, ok: false });
 

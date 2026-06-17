@@ -44,20 +44,36 @@ export async function verifyOtp(email, otp) {
   return token;
 }
 
+let refreshInFlight = null;
+
 export async function tryRefresh() {
-  const res = await fetch(`${AUTH_URL}/refresh`, {
-    method: "POST",
-    credentials: "include",
-  });
+  // Si ya hay un refresh en curso, devolvemos esa misma promesa.
+  // Esto evita que React StrictMode (en dev) o llamadas concurrentes
+  // generen dos requests /refresh simultáneos que el backend puede
+  // rate-limitar (429).
+  if (refreshInFlight) return refreshInFlight;
 
-  if (!res.ok) {
-    return null;
-  }
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${AUTH_URL}/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
 
-  const data = await res.json();
-  const token = data.accessToken;
-  sessionStorage.setItem(TOKEN_KEY, token);
-  return token;
+      if (!res.ok) {
+        return null;
+      }
+
+      const data = await res.json();
+      const token = data.accessToken;
+      sessionStorage.setItem(TOKEN_KEY, token);
+      return token;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
 }
 
 export async function logout() {
