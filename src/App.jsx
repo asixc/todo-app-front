@@ -84,19 +84,18 @@ function App() {
 
   useEffect(() => {
     const init = async () => {
-      const existingToken = getToken();
-      if (existingToken) {
-        try {
-          await loadItems();
-        } catch {
-          const refreshed = await tryRefresh();
-          if (refreshed) await loadItems();
-          else setShowLogin(true);
-        }
+      // Llamamos siempre a tryRefresh() primero:
+      // - Si hay token pero está expirado, refresh lo renueva sin tener
+      //   que hacer un GET /todos que sabemos que va a fallar.
+      // - Si no hay token pero la cookie de refresh sigue válida,
+      //   obtenemos un token nuevo.
+      // - Si refresh falla (token expirado totalmente), mostramos login.
+      // Resultado: 0 o 1 GET /todos, nunca 2.
+      const refreshed = await tryRefresh();
+      if (refreshed) {
+        await loadItems();
       } else {
-        const refreshed = await tryRefresh();
-        if (refreshed) await loadItems();
-        else setShowLogin(true);
+        setShowLogin(true);
       }
     };
     init();
