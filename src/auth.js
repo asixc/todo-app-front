@@ -75,30 +75,43 @@ export async function logout() {
 export const AUTH_REQUIRED = "AUTH_REQUIRED";
 
 export async function apiFetch(url, options = {}) {
-  const token = getToken();
-
   const headers = {
     ...options.headers,
     Origin: window.location.origin,
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   if (options.body && typeof options.body === "string") {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(url, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  const doFetch = async () => {
+    const token = getToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    } else {
+      delete headers["Authorization"];
+    }
+    return fetch(url, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+  };
+
+  let res = await doFetch();
 
   if (res.status === 401 || res.status === 403) {
-    sessionStorage.removeItem(TOKEN_KEY);
-    throw new Error(AUTH_REQUIRED);
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      res = await doFetch();
+      if (res.status === 401 || res.status === 403) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        throw new Error(AUTH_REQUIRED);
+      }
+    } else {
+      sessionStorage.removeItem(TOKEN_KEY);
+      throw new Error(AUTH_REQUIRED);
+    }
   }
 
   return res;
